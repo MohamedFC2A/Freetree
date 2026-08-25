@@ -43,7 +43,8 @@ class TikTokLiveService {
     this.tiktokUsername = username.trim().replace(/^@/, '');
     this.updateStatus('connected', `متصل بالبث المباشر @${this.tiktokUsername} - يستمع للهدايا تلقائياً`);
 
-    const wsUrl = customWsUrl || `ws://localhost:21213/`;
+    const host = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : 'localhost';
+    const wsUrl = customWsUrl || `ws://${host}:21213/`;
 
     try {
       if (this.socket) {
