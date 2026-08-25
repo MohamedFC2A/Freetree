@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Participant } from '../types';
-import { UserPlus, Plus, Minus, Trash2, Users, ClipboardList, Sparkles, RotateCcw } from 'lucide-react';
+import { UserPlus, Plus, Minus, Trash2, Users, ClipboardList, Sparkles, RotateCcw, Crown } from 'lucide-react';
 import { RoseIcon } from './RoseIcon';
 
 interface CleanSupportersManagerProps {
@@ -30,6 +30,9 @@ export const CleanSupportersManager: React.FC<CleanSupportersManagerProps> = ({
   const [bulkText, setBulkText] = useState('');
 
   const totalRoses = participants.reduce((sum, p) => sum + p.rosesCount, 0);
+
+  // Sorted list for rank calculation
+  const sortedByRoses = [...participants].sort((a, b) => b.rosesCount - a.rosesCount);
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +81,7 @@ export const CleanSupportersManager: React.FC<CleanSupportersManagerProps> = ({
           </div>
           <div>
             <h3 className="text-xs sm:text-sm font-black text-black m-0 leading-tight">
-              قائمة الداعمين بالسحب
+              ترتيب الداعمين ونسبة الفوز
             </h3>
             <p className="text-[10px] font-bold text-gray-700 m-0">
               {participants.length} داعم • {totalRoses} وردة 🌹
@@ -94,7 +97,7 @@ export const CleanSupportersManager: React.FC<CleanSupportersManagerProps> = ({
             title="لصق عدة أسماء دفعة واحدة"
           >
             <ClipboardList className="w-3 h-3" />
-            <span>لصق جماعي</span>
+            <span>لصق</span>
           </button>
 
           <button
@@ -117,7 +120,7 @@ export const CleanSupportersManager: React.FC<CleanSupportersManagerProps> = ({
         </div>
       </div>
 
-      {/* Bulk Add Textarea Modal / Collapsible */}
+      {/* Bulk Add Textarea Collapsible */}
       {isBulkOpen && (
         <form onSubmit={handleBulkSubmit} className="bg-[#FFFDF0] p-2 border-2 border-black neo-box-sm space-y-1.5 shrink-0 animate-in fade-in duration-150">
           <textarea
@@ -201,7 +204,7 @@ export const CleanSupportersManager: React.FC<CleanSupportersManagerProps> = ({
         </div>
       </form>
 
-      {/* Supporters List (Internal Scroll with Zero Page Overflow) */}
+      {/* Supporters List (Internal Scroll with Rank Badges) */}
       <div className="flex-1 min-h-0 bg-[#FFFDF0] border-2 border-black p-1.5 neo-box-sm overflow-y-auto space-y-1">
         {participants.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center p-4 text-center">
@@ -211,23 +214,46 @@ export const CleanSupportersManager: React.FC<CleanSupportersManagerProps> = ({
             </p>
           </div>
         ) : (
-          participants.map((p, idx) => {
+          participants.map((p) => {
             const chance = totalRoses > 0 ? ((p.rosesCount / totalRoses) * 100).toFixed(1) : '0';
+            const rankIndex = sortedByRoses.findIndex(item => item.id === p.id);
+            const isTop1 = rankIndex === 0;
+            const isTop2 = rankIndex === 1;
+            const isTop3 = rankIndex === 2;
+
             return (
               <div
                 key={p.id}
-                className="bg-white border border-black p-1.5 neo-box-sm flex items-center justify-between gap-1.5 hover:shadow-[1px_1px_0px_#000] transition-all"
+                className={`border border-black p-1.5 neo-box-sm flex items-center justify-between gap-1.5 transition-all ${
+                  isTop1
+                    ? 'bg-[#FFF9C4] border-2 shadow-[2px_2px_0px_#000]'
+                    : 'bg-white hover:shadow-[1px_1px_0px_#000]'
+                }`}
               >
-                {/* User Info */}
+                {/* User Info & Rank */}
                 <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                  <span className="text-[10px] font-mono-code font-black text-gray-400 w-4 text-center shrink-0">
-                    #{idx + 1}
-                  </span>
+                  <div className="w-5 h-5 flex items-center justify-center shrink-0">
+                    {isTop1 ? (
+                      <span className="text-sm font-black" title="المركز الأول">🥇</span>
+                    ) : isTop2 ? (
+                      <span className="text-sm font-black" title="المركز الثاني">🥈</span>
+                    ) : isTop3 ? (
+                      <span className="text-sm font-black" title="المركز الثالث">🥉</span>
+                    ) : (
+                      <span className="text-[10px] font-mono-code font-black text-gray-400">
+                        #{rankIndex + 1}
+                      </span>
+                    )}
+                  </div>
+
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-1">
-                      <span className="text-xs font-black text-black truncate">
-                        {p.displayName}
-                      </span>
+                      <div className="flex items-center gap-1 truncate">
+                        <span className="text-xs font-black text-black truncate">
+                          {p.displayName}
+                        </span>
+                        {isTop1 && <Crown className="w-3 h-3 text-[#FF9900] shrink-0 fill-current" />}
+                      </div>
                       <span className="text-[10px] font-mono-code font-black text-[#FF2E63] shrink-0">
                         {chance}%
                       </span>
@@ -235,7 +261,9 @@ export const CleanSupportersManager: React.FC<CleanSupportersManagerProps> = ({
                     {/* Visual Progress Bar */}
                     <div className="w-full bg-gray-200 h-1 border border-black/30 mt-0.5 overflow-hidden">
                       <div
-                        className="bg-[#00FF66] h-full transition-all duration-300"
+                        className={`h-full transition-all duration-300 ${
+                          isTop1 ? 'bg-[#FF9900]' : 'bg-[#00FF66]'
+                        }`}
                         style={{ width: `${Math.max(2, parseFloat(chance))}%` }}
                       />
                     </div>

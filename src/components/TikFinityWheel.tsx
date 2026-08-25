@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import type { Participant, SubscriptionItem } from '../types';
 import { soundEngine } from '../utils/audio';
-import { Play, Shuffle, Trash2, Trophy, Crown, Timer } from 'lucide-react';
+import { Play, Shuffle, Trash2, Trophy, Crown, Timer, Sparkles } from 'lucide-react';
 
 interface TikFinityWheelProps {
   participants: Participant[];
@@ -88,18 +88,19 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
     return slices.length - 1;
   }, [getSliceAngles]);
 
-  // Draw the wheel on Canvas
+  // High-DPI Retina Crisp Draw Function
   const drawWheel = useCallback((angle: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // High DPI / 2x rendering scaling for extreme sharpness
     const width = canvas.width;
     const height = canvas.height;
     const centerX = width / 2;
     const centerY = height / 2;
-    const radius = Math.min(centerX, centerY) - 20;
+    const radius = Math.min(centerX, centerY) - 36;
 
     ctx.clearRect(0, 0, width, height);
 
@@ -113,12 +114,12 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
       ctx.arc(0, 0, radius, 0, 2 * Math.PI);
       ctx.fillStyle = '#FFE600';
       ctx.fill();
-      ctx.lineWidth = 6;
+      ctx.lineWidth = 10;
       ctx.strokeStyle = '#000000';
       ctx.stroke();
 
       ctx.fillStyle = '#000000';
-      ctx.font = '900 18px "Cairo", "Plus Jakarta Sans", sans-serif';
+      ctx.font = '900 32px "Cairo", "Plus Jakarta Sans", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('أضف داعمين للبدء', 0, 0);
@@ -130,7 +131,7 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
     ctx.translate(centerX, centerY);
     ctx.rotate(angle);
 
-    // 2. Draw Slices with Neubrutalism styling
+    // 2. Draw Slices with High-Contrast Neubrutalism styling
     slices.forEach((slice, i) => {
       ctx.beginPath();
       ctx.moveTo(0, 0);
@@ -140,7 +141,7 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
       ctx.fillStyle = NEU_COLORS[i % NEU_COLORS.length];
       ctx.fill();
 
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 8;
       ctx.strokeStyle = '#000000';
       ctx.stroke();
 
@@ -151,95 +152,95 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#000000';
 
-      const fontSize = slice.angleSpan < 0.25 ? 11 : slice.angleSpan < 0.4 ? 13 : 15;
+      const fontSize = slice.angleSpan < 0.25 ? 20 : slice.angleSpan < 0.4 ? 24 : 28;
       ctx.font = `900 ${fontSize}px "Cairo", "Plus Jakarta Sans", sans-serif`;
 
       let label = slice.participant.displayName;
-      if (label.length > 14) {
-        label = label.substring(0, 12) + '..';
+      if (label.length > 13) {
+        label = label.substring(0, 11) + '..';
       }
 
       const rosesInfo = `(${slice.participant.rosesCount} 🌹)`;
       const textToRender = slice.angleSpan > 0.35 ? `${label}  ${rosesInfo}` : label;
 
-      ctx.shadowColor = 'rgba(255,255,255,0.8)';
-      ctx.shadowBlur = 2;
-      ctx.fillText(textToRender, radius - 26, 0);
+      ctx.shadowColor = 'rgba(255,255,255,0.9)';
+      ctx.shadowBlur = 4;
+      ctx.fillText(textToRender, radius - 48, 0);
       ctx.shadowBlur = 0;
 
       ctx.restore();
     });
 
-    // 3. Outer Rim with Pegs
+    // 3. Heavy Outer Rim with Pegs
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, 2 * Math.PI);
-    ctx.lineWidth = 6;
+    ctx.lineWidth = 12;
     ctx.strokeStyle = '#000000';
     ctx.stroke();
 
-    // Draw Pegs around perimeter
+    // Draw Bolt Pegs around perimeter
     const totalPegs = Math.max(12, Math.min(24, slices.length * 2));
     for (let p = 0; p < totalPegs; p++) {
       const pegAngle = (p * 2 * Math.PI) / totalPegs;
-      const pegX = Math.cos(pegAngle) * (radius - 5);
-      const pegY = Math.sin(pegAngle) * (radius - 5);
+      const pegX = Math.cos(pegAngle) * (radius - 10);
+      const pegY = Math.sin(pegAngle) * (radius - 10);
 
       ctx.beginPath();
-      ctx.arc(pegX, pegY, 4, 0, 2 * Math.PI);
+      ctx.arc(pegX, pegY, 7, 0, 2 * Math.PI);
       ctx.fillStyle = '#FFFFFF';
       ctx.fill();
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 3;
       ctx.strokeStyle = '#000000';
       ctx.stroke();
     }
 
     // 4. Center Hub
     ctx.beginPath();
-    ctx.arc(0, 0, 32, 0, 2 * Math.PI);
+    ctx.arc(0, 0, 60, 0, 2 * Math.PI);
     ctx.fillStyle = '#FFE600';
     ctx.fill();
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 9;
     ctx.strokeStyle = '#000000';
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.arc(0, 0, 22, 0, 2 * Math.PI);
+    ctx.arc(0, 0, 42, 0, 2 * Math.PI);
     ctx.fillStyle = '#000000';
     ctx.fill();
 
     ctx.fillStyle = '#FFE600';
-    ctx.font = '900 11px font-mono-code, sans-serif';
+    ctx.font = '900 20px font-mono-code, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('TIK', 0, 0);
 
     ctx.restore();
 
-    // 5. Draw Top Static Neubrutalism Pointer
+    // 5. Draw Top Pointer
     ctx.save();
-    ctx.translate(centerX, centerY - radius + 5);
+    ctx.translate(centerX, centerY - radius + 12);
 
     if (pegBounce > 0) {
       ctx.rotate((Math.sin(pegBounce * 10) * 0.15));
     }
 
     ctx.beginPath();
-    ctx.moveTo(-16, -26);
-    ctx.lineTo(16, -26);
-    ctx.lineTo(0, 14);
+    ctx.moveTo(-28, -46);
+    ctx.lineTo(28, -46);
+    ctx.lineTo(0, 26);
     ctx.closePath();
 
     ctx.fillStyle = '#FF2E63';
     ctx.fill();
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 7;
     ctx.strokeStyle = '#000000';
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.arc(0, -14, 4, 0, 2 * Math.PI);
+    ctx.arc(0, -25, 7, 0, 2 * Math.PI);
     ctx.fillStyle = '#FFFFFF';
     ctx.fill();
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.strokeStyle = '#000000';
     ctx.stroke();
 
@@ -349,7 +350,7 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
 
   return (
     <div className="w-full h-full neo-box p-3 bg-white flex flex-col justify-between gap-2 select-none border-2 sm:border-3 border-black shadow-[3px_3px_0px_#000] overflow-hidden">
-      {/* Minimal Wheel Header */}
+      {/* High Visibility Header */}
       <div className="flex items-center justify-between gap-2 border-b-2 border-black pb-1.5 shrink-0">
         <div className="flex items-center gap-1.5">
           <div className="w-7 h-7 bg-[#FFE600] border-2 border-black neo-box-sm flex items-center justify-center shadow-[1px_1px_0px_#000]">
@@ -361,26 +362,26 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
         </div>
 
         {/* Live Pointer Tag */}
-        <div className="bg-black text-white px-2.5 py-0.5 neo-box-sm flex items-center gap-1.5 text-xs font-black">
-          <Crown className="w-3 h-3 text-[#FFE600]" />
+        <div className="bg-black text-white px-2.5 py-0.5 neo-box-sm flex items-center gap-1.5 text-xs font-black shadow-[1px_1px_0px_#000]">
+          <Crown className="w-3 h-3 text-[#FFE600] fill-current" />
           <span className="text-gray-300 text-[10px]">المؤشر:</span>
-          <span className="text-[#FFE600] font-black text-xs truncate max-w-[120px]">{currentHoveredName || '---'}</span>
+          <span className="text-[#FFE600] font-black text-xs truncate max-w-[130px]">{currentHoveredName || '---'}</span>
         </div>
       </div>
 
-      {/* Canvas Wheel (Dynamic Fit) */}
+      {/* Retina HD Canvas Wheel (800x800 internal scaling) */}
       <div className="relative flex-1 min-h-0 flex items-center justify-center py-1 overflow-hidden">
         <canvas
           ref={canvasRef}
-          width={400}
-          height={400}
-          className="max-h-[min(380px,100%)] max-w-full h-auto aspect-square drop-shadow-[0_4px_10px_rgba(0,0,0,0.15)]"
+          width={800}
+          height={800}
+          className="max-h-[min(380px,100%)] max-w-full h-auto aspect-square drop-shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
         />
       </div>
 
-      {/* Clean Action Controls */}
+      {/* Action Controls */}
       <div className="space-y-1.5 shrink-0">
-        {/* Main Spin Action Button */}
+        {/* Main Spin Button */}
         <button
           type="button"
           disabled={isSpinning || participants.length === 0}
@@ -397,11 +398,11 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
               ? `جاري السحب (${spinSeconds} ثواني)...`
               : `تدوير العجلة الآن (${spinSeconds} ثواني)`}
           </span>
+          <Sparkles className="w-4 h-4 text-[#FFE600]" />
         </button>
 
         {/* Minimal Sub Controls */}
         <div className="grid grid-cols-4 gap-1.5">
-          {/* Duration Presets */}
           <div className="flex border border-black bg-white">
             {[10, 15, 5].map((sec) => (
               <button

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Volume2, VolumeX, History, Radio, Users, Sparkles, SlidersHorizontal, Download } from 'lucide-react';
+import { Volume2, VolumeX, History, Radio, Users, SlidersHorizontal, Download, ArrowLeft } from 'lucide-react';
 import { RoseIcon } from './RoseIcon';
 import type { ScreenRatioMode } from '../types';
 
@@ -36,13 +36,11 @@ export const Header: React.FC<HeaderProps> = ({
   winnersCount
 }) => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  // PWA install prompt handler
 
   useEffect(() => {
     const handler = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      
     };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
@@ -51,10 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
   const handleInstallApp = async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        
-      }
+      await deferredPrompt.userChoice;
       setDeferredPrompt(null);
     } else {
       alert('لتثبيت الموقع كتطبيق على Google Chrome:\nاضغط على أيقونة التثبيت (Install) الموجودة في شريط عنوان المتصفح بالأعلى ⬆️ أو من القائمة ⠇ ثم "تثبيت التطبيق".');
@@ -63,23 +58,40 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="w-full bg-[#FFE600] border-b-2 sm:border-b-3 border-black select-none sticky top-0 z-30 shadow-[0_2px_0px_#000]">
-      {/* Sleek Minimal Ticker */}
-      <div className="bg-black text-white py-0.5 px-3 overflow-hidden border-b border-black">
-        <div className="flex items-center justify-between text-[11px] font-black font-mono-code">
-          <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1 text-[#FFE600]">
-              <Sparkles className="w-3 h-3 text-[#FFE600]" />
-              سحوبات تيك توك لايف الرسمية لداعمين الورود 🌹
-            </span>
+      {/* Visual 1-2-3 Stream Hook Strip (فهم فكرة البث في ثانية واحدة) */}
+      <div className="bg-black text-white py-1 px-3 border-b border-black overflow-hidden">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 text-xs font-black">
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap">
+            {/* Step 1 */}
+            <div className="flex items-center gap-1 text-[#FFE600]">
+              <span className="w-4 h-4 bg-[#FFE600] text-black font-black text-[10px] rounded-full flex items-center justify-center shrink-0">1</span>
+              <span>أرسل وردة 🌹</span>
+            </div>
+
+            <ArrowLeft className="w-3 h-3 text-gray-500 hidden xs:inline" />
+
+            {/* Step 2 */}
+            <div className="flex items-center gap-1 text-[#00FF66]">
+              <span className="w-4 h-4 bg-[#00FF66] text-black font-black text-[10px] rounded-full flex items-center justify-center shrink-0">2</span>
+              <span>اسمك يكبر بالعجلة 🎡</span>
+            </div>
+
+            <ArrowLeft className="w-3 h-3 text-gray-500 hidden sm:inline" />
+
+            {/* Step 3 */}
+            <div className="hidden sm:flex items-center gap-1 text-[#00F0FF]">
+              <span className="w-4 h-4 bg-[#00F0FF] text-black font-black text-[10px] rounded-full flex items-center justify-center shrink-0">3</span>
+              <span>السهم يختار الفائز 🎁</span>
+            </div>
           </div>
-          <div className="hidden sm:flex items-center gap-3 text-[10px] text-gray-300">
-            <span>كل وردة = زيادة مساحة الاسم في العجلة</span>
-            <span className="text-[#00FF66]">• سحب عادل 100%</span>
+
+          <div className="text-[10px] font-mono-code font-black text-[#FF5376] bg-white/10 px-2 py-0.2 rounded-xs">
+            سحب عادل 100%
           </div>
         </div>
       </div>
 
-      {/* Main Clean Header Bar */}
+      {/* Main Header Bar */}
       <div className="w-full px-2.5 sm:px-3 py-1.5 flex items-center justify-between gap-1.5">
         {/* Brand */}
         <div className="flex items-center gap-1.5 shrink-0">
@@ -94,7 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         </div>
 
-        {/* Live Clean Counters */}
+        {/* Live Counters */}
         <div className="flex items-center gap-1.5 shrink-0">
           <div className="bg-white border-2 border-black px-2 py-0.5 neo-box-sm flex items-center gap-1 shadow-[1px_1px_0px_#000]" title="الداعمين">
             <Users className="w-3 h-3 text-black" />
@@ -109,21 +121,19 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Action Header Buttons */}
+        {/* Header Action Buttons */}
         <div className="flex items-center gap-1 shrink-0">
-          {/* PWA Install Button */}
           <button
             type="button"
             onClick={handleInstallApp}
             className="neo-btn bg-[#00FF66] text-black px-2 py-1 text-[10px] sm:text-[11px] font-black flex items-center gap-1 cursor-pointer shadow-[1px_1px_0px_#000]"
-            title="تثبيت الموقع كتطبيق على سطح المكتب أو الهاتف"
+            title="تثبيت التطبيق على جهازك"
           >
             <Download className="w-3 h-3 text-black" />
             <span className="hidden sm:inline">تثبيت التطبيق</span>
             <span className="sm:hidden">تثبيت</span>
           </button>
 
-          {/* Screen Size Selector Button */}
           <button
             type="button"
             onClick={onOpenScreenRatioModal}
@@ -137,7 +147,6 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
 
-          {/* Winners History Button */}
           <button
             type="button"
             onClick={onOpenWinnersHistory}
@@ -153,7 +162,6 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {/* LIVE Studio Guide */}
           <button
             type="button"
             onClick={onOpenObsMode}
@@ -164,7 +172,6 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden md:inline">الاستوديو</span>
           </button>
 
-          {/* Mute Button */}
           <button
             type="button"
             onClick={onToggleMute}
@@ -178,4 +185,3 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
-
