@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import type { Participant, SubscriptionItem, WinnerRecord } from '../types';
 import { soundEngine } from '../utils/audio';
 import confetti from 'canvas-confetti';
-import { Copy, Check, Trash2, RotateCcw, X, Gift, Sparkles, Crown, Trophy } from 'lucide-react';
+import { Copy, Check, Trash2, RotateCcw, X, Gift, Sparkles, Crown, Trophy, Timer } from 'lucide-react';
 import { RoseIcon } from './RoseIcon';
 
 interface WinnerModalProps {
@@ -26,6 +26,8 @@ export const WinnerModal: React.FC<WinnerModalProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [claimCode, setClaimCode] = useState('');
+  const [countdown, setCountdown] = useState(10);
+  const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (isOpen && winner) {
@@ -33,31 +35,29 @@ export const WinnerModal: React.FC<WinnerModalProps> = ({
 
       const generatedCode = `TIK-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
       setClaimCode(generatedCode);
+      setCountdown(10);
 
-      const duration = 3.5 * 1000;
-      const end = Date.now() + duration;
-      const colors = ['#FFE600', '#FF5376', '#00F0FF', '#00FF66', '#B185FF', '#000000'];
-
-      (function frame() {
+      // Lightweight, high-performance confetti burst (No infinite frame loop that freezes mobile!)
+      try {
         confetti({
-          particleCount: 8,
-          angle: 60,
-          spread: 75,
-          origin: { x: 0, y: 0.7 },
-          colors: colors
-        });
-        confetti({
-          particleCount: 8,
-          angle: 120,
-          spread: 75,
-          origin: { x: 1, y: 0.7 },
-          colors: colors
+          particleCount: 35,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#FFE600', '#FF5376', '#00F0FF', '#00FF66', '#B185FF'],
+          disableForReducedMotion: true
         });
 
-        if (Date.now() < end) {
-          requestAnimationFrame(frame);
-        }
-      })();
+        // Optional gentle second burst after 1.2s
+        setTimeout(() => {
+          confetti({
+            particleCount: 25,
+            spread: 80,
+            origin: { y: 0.5 },
+            colors: ['#FFE600', '#FF5376', '#00F0FF', '#00FF66', '#B185FF'],
+            disableForReducedMotion: true
+          });
+        }, 1200);
+      } catch {}
 
       const record: WinnerRecord = {
         id: `w-${Date.now()}`,
@@ -67,8 +67,28 @@ export const WinnerModal: React.FC<WinnerModalProps> = ({
         claimCode: generatedCode
       };
       onSaveWinner(record);
+
+      // Clean 10-Second Auto-Close Countdown Timer
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            if (timerRef.current) clearInterval(timerRef.current);
+            onClose();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     }
-  }, [isOpen, winner, prize, onSaveWinner]);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [isOpen, winner, prize, onSaveWinner, onClose]);
 
   if (!isOpen || !winner) return null;
 
@@ -87,15 +107,31 @@ export const WinnerModal: React.FC<WinnerModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-200 select-none">
-      <div className="neo-box-lg max-w-md w-full bg-[#FFE600] p-4 sm:p-6 relative text-center overflow-hidden border-4 border-black shadow-[8px_8px_0px_#000]">
-        {/* Close Button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-3 left-3 neo-btn bg-white text-black p-1 cursor-pointer z-10"
-        >
-          <X className="w-4 h-4" />
-        </button>
+      <div className="neo-box-lg max-w-md w-full bg-[#FFE600] p-4 sm:p-5 relative text-center overflow-hidden border-3 sm:border-4 border-black shadow-[8px_8px_0px_#000]">
+        {/* Top Countdown Progress Bar (10 Seconds) */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-black/20 overflow-hidden">
+          <div
+            className="h-full bg-black transition-all duration-1000 ease-linear"
+            style={{ width: `${(countdown / 10) * 100}%` }}
+          />
+        </div>
+
+        {/* Close Button + Countdown Badge */}
+        <div className="flex items-center justify-between mb-2 pt-1">
+          <button
+            type="button"
+            onClick={onClose}
+            className="neo-btn bg-white text-black p-1 cursor-pointer"
+            title="إغلاق"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          <div className="bg-black text-[#FFE600] px-2 py-0.5 text-[11px] font-mono-code font-black neo-badge flex items-center gap-1">
+            <Timer className="w-3 h-3 text-[#FF5376] animate-pulse" />
+            <span>إغلاق تلقائي ({countdown}ث)</span>
+          </div>
+        </div>
 
         {/* Top Celebration Ribbon */}
         <div className="inline-flex items-center gap-1.5 bg-black text-white px-3.5 py-1 border-2 border-black font-black text-xs sm:text-sm neo-badge mb-2 uppercase tracking-wider transform -rotate-1 shadow-[2px_2px_0px_#000]">
@@ -105,10 +141,10 @@ export const WinnerModal: React.FC<WinnerModalProps> = ({
         </div>
 
         {/* Winner Hero Card */}
-        <div className="bg-white border-3 border-black p-4 neo-box-sm relative my-2 space-y-2.5">
+        <div className="bg-white border-2 sm:border-3 border-black p-3.5 neo-box-sm relative my-2 space-y-2">
           {/* Winner Avatar with Crown Vector */}
           <div className="relative inline-block">
-            <div className="w-18 h-18 sm:w-20 sm:h-20 bg-[#FFE600] border-3 border-black neo-box-sm mx-auto overflow-hidden">
+            <div className="w-16 h-16 sm:w-18 sm:h-18 bg-[#FFE600] border-3 border-black neo-box-sm mx-auto overflow-hidden">
               <img
                 src={winner.avatarUrl}
                 alt={winner.displayName}
@@ -119,13 +155,13 @@ export const WinnerModal: React.FC<WinnerModalProps> = ({
               />
             </div>
             <div className="absolute -top-2.5 -right-2 bg-black text-[#FFE600] p-1 border-2 border-black rounded-xs shadow-[2px_2px_0px_#000]">
-              <Crown className="w-4 h-4 fill-current" />
+              <Crown className="w-3.5 h-3.5 fill-current" />
             </div>
           </div>
 
           {/* Winner Name & TikTok Handle */}
           <div>
-            <h3 className="text-xl sm:text-2xl font-black text-black m-0 leading-tight">
+            <h3 className="text-lg sm:text-xl font-black text-black m-0 leading-tight">
               {winner.displayName}
             </h3>
             <span className="text-xs font-mono-code font-bold text-gray-700 block">
@@ -140,9 +176,9 @@ export const WinnerModal: React.FC<WinnerModalProps> = ({
             <span className="font-mono-code font-black text-sm">{winner.rosesCount} وردة</span>
           </div>
 
-          {/* Won Prize Details Box with Real Brand PNG */}
+          {/* Won Prize Details Box */}
           <div 
-            className="border-2 border-black p-2.5 neo-box-sm text-right space-y-1 shadow-[2px_2px_0px_#000]"
+            className="border-2 border-black p-2 neo-box-sm text-right space-y-1 shadow-[2px_2px_0px_#000]"
             style={{ backgroundColor: prize.color || '#FFE600' }}
           >
             <div className="flex items-center justify-between">
@@ -150,34 +186,32 @@ export const WinnerModal: React.FC<WinnerModalProps> = ({
                 <Gift className="w-3.5 h-3.5 text-black" />
                 الجائزة التي فاز بها:
               </span>
-              <span className="bg-black text-[#FFE600] text-[11px] font-mono-code font-bold px-1.5 py-0.2">
+              <span className="bg-black text-[#FFE600] text-[10px] font-mono-code font-bold px-1.5 py-0.2">
                 {prize.value}
               </span>
             </div>
 
-            <div className="flex items-center gap-2.5 pt-0.5">
-              <div className="w-10 h-10 bg-white border-2 border-black p-1 neo-box-sm flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-2 pt-0.5">
+              <div className="w-9 h-9 bg-white border-2 border-black p-1 neo-box-sm flex items-center justify-center shrink-0">
                 {prize.imagePng ? (
                   <img
                     src={prize.imagePng}
                     alt={prize.name}
-                    referrerPolicy="no-referrer"
-                    crossOrigin="anonymous"
                     className="w-full h-full object-contain"
                     onError={(e) => {
                       (e.target as HTMLElement).style.display = 'none';
                     }}
                   />
                 ) : (
-                  <Gift className="w-6 h-6 text-black" />
+                  <Gift className="w-5 h-5 text-black" />
                 )}
               </div>
 
               <div>
-                <div className="text-sm sm:text-base font-black text-black leading-tight">
+                <div className="text-xs sm:text-sm font-black text-black leading-tight">
                   {prize.nameAr}
                 </div>
-                <div className="text-[11px] font-bold text-gray-800">
+                <div className="text-[10px] font-bold text-gray-800">
                   {prize.durationAr}
                 </div>
               </div>
@@ -202,14 +236,14 @@ export const WinnerModal: React.FC<WinnerModalProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
+        <div className="grid grid-cols-2 gap-2 mt-2">
           <button
             type="button"
             onClick={handleRemoveAndClose}
-            className="neo-btn bg-[#FF5376] text-white py-2 px-3 text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_#000]"
+            className="neo-btn bg-[#FF5376] text-white py-2 px-2 text-xs font-black flex items-center justify-center gap-1 cursor-pointer shadow-[2px_2px_0px_#000]"
           >
-            <Trash2 className="w-4 h-4" />
-            <span>حذف الفائز من العجلة</span>
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>حذف الفائز</span>
           </button>
 
           <button
@@ -218,10 +252,10 @@ export const WinnerModal: React.FC<WinnerModalProps> = ({
               onClose();
               setTimeout(() => onReSpin(), 200);
             }}
-            className="neo-btn bg-[#00FF66] text-black py-2 px-3 text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_#000]"
+            className="neo-btn bg-[#00FF66] text-black py-2 px-2 text-xs font-black flex items-center justify-center gap-1 cursor-pointer shadow-[2px_2px_0px_#000]"
           >
-            <RotateCcw className="w-4 h-4" />
-            <span>إعادة السحب (Re-spin)</span>
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>إعادة السحب</span>
           </button>
         </div>
       </div>

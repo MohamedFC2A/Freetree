@@ -348,6 +348,9 @@ export function App() {
                 onClear={handleClear}
                 isMuted={isMuted}
                 onToggleMute={handleToggleMute}
+                onAddParticipant={handleAddParticipant}
+                onUpdateRoses={handleUpdateRoses}
+                onRemoveParticipant={handleRemoveParticipant}
               />
             </div>
           </div>

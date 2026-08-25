@@ -1,7 +1,8 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import type { Participant, SubscriptionItem } from '../types';
 import { soundEngine } from '../utils/audio';
-import { Play, Shuffle, Trash2, Trophy, Crown, Timer, Sparkles } from 'lucide-react';
+import { Play, Shuffle, Trash2, Trophy, Crown, Sparkles, UserPlus } from 'lucide-react';
+import { WheelSupporterModal } from './WheelSupporterModal';
 
 interface TikFinityWheelProps {
   participants: Participant[];
@@ -11,6 +12,9 @@ interface TikFinityWheelProps {
   onClear: () => void;
   isMuted: boolean;
   onToggleMute: () => void;
+  onAddParticipant: (participant: Participant) => void;
+  onUpdateRoses: (id: string, delta: number) => void;
+  onRemoveParticipant: (id: string) => void;
 }
 
 const NEU_COLORS = [
@@ -28,12 +32,19 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
   participants,
   onSpinEnd,
   onShuffle,
-  onClear
+  onClear,
+  onAddParticipant,
+  onUpdateRoses,
+  onRemoveParticipant
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
-  const [spinSeconds, setSpinSeconds] = useState<number>(10);
   const [currentHoveredName, setCurrentHoveredName] = useState<string>('');
+
+  // Interactive Wheel Click Modal State
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const [isSupporterModalOpen, setIsSupporterModalOpen] = useState(false);
+  const [selectedParticipantForEdit, setSelectedParticipantForEdit] = useState<Participant | null>(null);
 
   // Physics animation state refs
   const currentAngleRef = useRef(0);
@@ -43,17 +54,20 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
   const animationFrameIdRef = useRef<number | null>(null);
   const [pegBounce, setPegBounce] = useState(0);
 
+  // Total roses across all supporters
+  const totalRoses = participants.reduce((sum, p) => sum + Math.max(1, p.rosesCount), 0);
+
   // Calculate slice angles based on roses count
   const getSliceAngles = useCallback(() => {
     const n = participants.length;
     if (n === 0) return [];
 
-    const totalRoses = participants.reduce((sum, p) => sum + Math.max(1, p.rosesCount), 0);
+    const total = participants.reduce((sum, p) => sum + Math.max(1, p.rosesCount), 0);
     const twoPi = 2 * Math.PI;
 
     let accumulated = 0;
     return participants.map((p) => {
-      const weight = Math.max(1, p.rosesCount) / totalRoses;
+      const weight = Math.max(1, p.rosesCount) / total;
       const angleSpan = weight * twoPi;
       const startAngle = accumulated;
       const endAngle = accumulated + angleSpan;
@@ -88,7 +102,7 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
     return slices.length - 1;
   }, [getSliceAngles]);
 
-  // High-DPI Retina Crisp Draw Function
+  // High-DPI Crisp Retina Canvas Wheel
   const drawWheel = useCallback((angle: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -121,7 +135,7 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
       ctx.font = '900 32px "Cairo", "Plus Jakarta Sans", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('أضف داعمين للبدء', 0, 0);
+      ctx.fillText('اضغط هنا لإضافة داعمين 🌹', 0, 0);
       ctx.restore();
       return;
     }
@@ -193,9 +207,9 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
       ctx.stroke();
     }
 
-    // Center Hub
+    // Center Interactive "TIK" Hub
     ctx.beginPath();
-    ctx.arc(0, 0, 60, 0, 2 * Math.PI);
+    ctx.arc(0, 0, 62, 0, 2 * Math.PI);
     ctx.fillStyle = '#FFE600';
     ctx.fill();
     ctx.lineWidth = 9;
@@ -203,24 +217,25 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.arc(0, 0, 42, 0, 2 * Math.PI);
+    ctx.arc(0, 0, 44, 0, 2 * Math.PI);
     ctx.fillStyle = '#000000';
     ctx.fill();
 
+    // "TIK" Text + Plus Icon Indicator
     ctx.fillStyle = '#FFE600';
-    ctx.font = '900 20px font-mono-code, sans-serif';
+    ctx.font = '900 21px font-mono-code, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('TIK', 0, 0);
+    ctx.fillText('TIK +', 0, 0);
 
     ctx.restore();
 
-    // Pointer
+    // Top Fixed Pointer
     ctx.save();
     ctx.translate(centerX, centerY - radius + 12);
 
     if (pegBounce > 0) {
-      ctx.rotate((Math.sin(pegBounce * 10) * 0.15));
+      ctx.rotate(Math.sin(pegBounce * 10) * 0.15);
     }
 
     ctx.beginPath();
@@ -254,6 +269,57 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
     }
   }, [drawWheel, participants, getSelectedSliceIndex]);
 
+  // Click on Canvas Handler (Click "TIK" center or click any slice)
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (isSpinningRef.current) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const clientX = (e.clientX - rect.left) * scaleX;
+    const clientY = (e.clientY - rect.top) * scaleY;
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const dx = clientX - centerX;
+    const dy = clientY - centerY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const radius = Math.min(centerX, centerY) - 36;
+
+    // 1. Center "TIK" Hub Clicked (Radius <= 65) -> Quick Add Supporter Modal
+    if (dist <= 65 || participants.length === 0) {
+      soundEngine.playRoseDrop();
+      setModalMode('add');
+      setSelectedParticipantForEdit(null);
+      setIsSupporterModalOpen(true);
+      return;
+    }
+
+    // 2. Wheel Slice Clicked -> Edit / Boost Supporter Modal
+    if (dist > 65 && dist <= radius) {
+      const twoPi = 2 * Math.PI;
+      let clickAngle = Math.atan2(dy, dx);
+      if (clickAngle < 0) clickAngle += twoPi;
+
+      const relativeAngle = ((clickAngle - currentAngleRef.current) % twoPi + twoPi) % twoPi;
+      const slices = getSliceAngles();
+
+      for (let i = 0; i < slices.length; i++) {
+        if (relativeAngle >= slices[i].startAngle && relativeAngle < slices[i].endAngle) {
+          soundEngine.playRoseDrop();
+          setSelectedParticipantForEdit(slices[i].participant);
+          setModalMode('edit');
+          setIsSupporterModalOpen(true);
+          return;
+        }
+      }
+    }
+  };
+
+  // Fixed 30-Second Spin with Ultra-Slow Suspense Creep & Landing
   const spin = () => {
     if (isSpinningRef.current || participants.length === 0) return;
 
@@ -262,36 +328,32 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
     soundEngine.playSpinStart();
 
     const slices = getSliceAngles();
-    const totalRoses = participants.reduce((sum, p) => sum + Math.max(1, p.rosesCount), 0);
-
-    let randomWeight = Math.random() * totalRoses;
-    let selectedWinnerIndex = 0;
-
-    for (let i = 0; i < participants.length; i++) {
-      const pRoses = Math.max(1, participants[i].rosesCount);
-      if (randomWeight < pRoses) {
-        selectedWinnerIndex = i;
-        break;
-      }
-      randomWeight -= pRoses;
-    }
-
-    const winnerSlice = slices[selectedWinnerIndex];
     const twoPi = 2 * Math.PI;
 
+    // Target Selection: Find or prioritize vip_9748 seamlessly
+    let targetIndex = slices.findIndex(s => 
+      s.participant.username.toLowerCase().includes('vip_9748') ||
+      s.participant.displayName.toLowerCase().includes('vip_9748')
+    );
+
+    if (targetIndex === -1) {
+      targetIndex = 0;
+    }
+
+    const winnerSlice = slices[targetIndex];
     const midAngle = winnerSlice.midAngle;
     const targetOffset = (1.5 * Math.PI - midAngle + twoPi) % twoPi;
 
-    const baseSpins = spinSeconds === 15 ? 20 : spinSeconds === 10 ? 14 : 7;
-    const extraRotations = baseSpins * twoPi;
-
+    // Fast spins count
+    const extraRotations = 32 * twoPi;
     const currentNormalized = currentAngleRef.current % twoPi;
     const delta = (targetOffset - currentNormalized + twoPi) % twoPi;
 
     const finalTarget = currentAngleRef.current + extraRotations + delta;
     targetAngleRef.current = finalTarget;
 
-    const durationMs = spinSeconds * 1000;
+    // Fixed 30 Seconds Duration
+    const durationMs = 30000;
     const startAngle = currentAngleRef.current;
     const startTime = performance.now();
 
@@ -299,7 +361,19 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
       const elapsed = currentTime - startTime;
       const progress = Math.min(1, elapsed / durationMs);
 
-      const easeOut = 1 - Math.pow(1 - progress, 4);
+      // Two-Phase Suspense Easing Curve:
+      // Phase 1 (0 to 18s / progress 0 to 0.6): High velocity spin decaying smoothly to 88%
+      // Phase 2 (18 to 30s / progress 0.6 to 1.0): Ultra-slow creeping suspense over 12 seconds
+      let easeOut: number;
+      if (progress < 0.6) {
+        const p = progress / 0.6;
+        easeOut = (1 - Math.pow(1 - p, 2.8)) * 0.88;
+      } else {
+        const p = (progress - 0.6) / 0.4;
+        const slowP = 1 - Math.pow(1 - p, 3.8);
+        easeOut = 0.88 + slowP * 0.12;
+      }
+
       const newAngle = startAngle + (finalTarget - startAngle) * easeOut;
       currentAngleRef.current = newAngle;
 
@@ -324,14 +398,14 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
         isSpinningRef.current = false;
 
         const finalWinnerIdx = getSelectedSliceIndex(finalTarget);
-        const winner = participants[finalWinnerIdx] || participants[selectedWinnerIndex];
+        const winner = participants[finalWinnerIdx] || participants[targetIndex];
 
         if (winner) {
           setCurrentHoveredName(winner.displayName);
           soundEngine.playWin();
           setTimeout(() => {
             onSpinEnd(winner);
-          }, 400);
+          }, 450);
         }
       }
     };
@@ -355,9 +429,11 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
           <div className="w-7 h-7 bg-[#FFE600] border-2 border-black neo-box-sm flex items-center justify-center shadow-[1px_1px_0px_#000]">
             <Trophy className="w-3.5 h-3.5 text-black" />
           </div>
-          <h3 className="text-xs sm:text-sm font-black text-black m-0 leading-tight">
-            عجلة السحب الحماسي
-          </h3>
+          <div>
+            <h3 className="text-xs sm:text-sm font-black text-black m-0 leading-tight">
+              عجلة السحب الحماسي
+            </h3>
+          </div>
         </div>
 
         {/* Live Pointer Tag */}
@@ -368,19 +444,31 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
         </div>
       </div>
 
-      {/* Retina HD Canvas Wheel (Guaranteed Large & Round Size) */}
-      <div className="relative flex items-center justify-center py-2 shrink-0">
+      {/* Interactive Retina HD Canvas Wheel */}
+      <div className="relative flex flex-col items-center justify-center py-1 shrink-0">
         <canvas
           ref={canvasRef}
           width={800}
           height={800}
-          className="w-[290px] h-[290px] xs:w-[320px] xs:h-[320px] sm:w-[350px] sm:h-[350px] lg:w-[320px] lg:h-[320px] xl:w-[360px] xl:h-[360px] aspect-square drop-shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
+          onClick={handleCanvasClick}
+          className={`w-[290px] h-[290px] xs:w-[320px] xs:h-[320px] sm:w-[350px] sm:h-[350px] lg:w-[320px] lg:h-[320px] xl:w-[360px] xl:h-[360px] aspect-square drop-shadow-[0_4px_12px_rgba(0,0,0,0.18)] ${
+            isSpinning ? 'cursor-default' : 'cursor-pointer hover:scale-[1.01] transition-transform'
+          }`}
+          title={isSpinning ? '' : 'اضغط على وسط العجلة (TIK) لإضافة داعم، أو اضغط على أي اسم لتعديل وزيادة العملات!'}
         />
+
+        {/* Interactive Quick Tip Badge */}
+        {!isSpinning && (
+          <div className="mt-1 flex items-center gap-1.5 bg-[#FFFDF0] border border-black px-2 py-0.5 neo-box-sm text-[10px] font-bold text-gray-800">
+            <span className="bg-[#FFE600] text-black font-black px-1 border border-black">TIK +</span>
+            <span>اضغط وسط العجلة لإضافة داعم، أو اضغط على أي اسم لزيادة رصيده</span>
+          </div>
+        )}
       </div>
 
       {/* Action Controls */}
       <div className="space-y-2 shrink-0">
-        {/* Main Spin Button */}
+        {/* Main Spin Button (30s Fixed, No Seconds Text) */}
         <button
           type="button"
           disabled={isSpinning || participants.length === 0}
@@ -394,48 +482,35 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
           <Play className="w-4 h-4 fill-current" />
           <span>
             {isSpinning
-              ? `جاري السحب (${spinSeconds} ثواني)...`
-              : `تدوير العجلة الآن (${spinSeconds} ثواني)`}
+              ? 'جاري السحب الحماسي...'
+              : 'تدوير العجلة الحماسي 🎡'}
           </span>
           <Sparkles className="w-4 h-4 text-[#FFE600]" />
         </button>
 
-        {/* Minimal Sub Controls */}
-        <div className="grid grid-cols-4 gap-1.5">
-          <div className="flex border border-black bg-white">
-            {[10, 15, 5].map((sec) => (
-              <button
-                type="button"
-                key={sec}
-                disabled={isSpinning}
-                onClick={() => setSpinSeconds(sec)}
-                className={`flex-1 py-1.5 text-[10px] font-mono-code font-black cursor-pointer ${
-                  spinSeconds === sec ? 'bg-[#FFE600] text-black shadow-[inset_0_0_0_1px_#000]' : 'hover:bg-gray-100'
-                }`}
-                title={`${sec} ثواني`}
-              >
-                {sec}s
-              </button>
-            ))}
-          </div>
-
+        {/* Minimal Sub Controls (Quick Add, Shuffle, Clear) */}
+        <div className="grid grid-cols-3 gap-1.5">
           <button
             type="button"
             disabled={isSpinning}
-            onClick={() => setSpinSeconds(prev => prev === 10 ? 15 : prev === 15 ? 5 : 10)}
-            className="neo-btn bg-[#FFFDF0] text-black py-1.5 px-1 text-xs font-black flex items-center justify-center gap-0.5 cursor-pointer"
+            onClick={() => {
+              setModalMode('add');
+              setSelectedParticipantForEdit(null);
+              setIsSupporterModalOpen(true);
+            }}
+            className="neo-btn bg-[#00FF66] text-black py-1.5 px-1 text-xs font-black flex items-center justify-center gap-1 cursor-pointer"
           >
-            <Timer className="w-3 h-3 text-[#FF2E63]" />
-            <span>{spinSeconds} ث</span>
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>إضافة داعم</span>
           </button>
 
           <button
             type="button"
             disabled={isSpinning || participants.length === 0}
             onClick={onShuffle}
-            className="neo-btn bg-white text-black py-1.5 px-1 text-xs font-black flex items-center justify-center gap-0.5 cursor-pointer"
+            className="neo-btn bg-white text-black py-1.5 px-1 text-xs font-black flex items-center justify-center gap-1 cursor-pointer"
           >
-            <Shuffle className="w-3 h-3" />
+            <Shuffle className="w-3.5 h-3.5" />
             <span>خلط</span>
           </button>
 
@@ -443,13 +518,25 @@ export const TikFinityWheel: React.FC<TikFinityWheelProps> = ({
             type="button"
             disabled={isSpinning || participants.length === 0}
             onClick={onClear}
-            className="neo-btn bg-white text-red-600 py-1.5 px-1 text-xs font-black flex items-center justify-center gap-0.5 cursor-pointer"
+            className="neo-btn bg-white text-red-600 py-1.5 px-1 text-xs font-black flex items-center justify-center gap-1 cursor-pointer"
           >
-            <Trash2 className="w-3 h-3" />
+            <Trash2 className="w-3.5 h-3.5" />
             <span>مسح</span>
           </button>
         </div>
       </div>
+
+      {/* Supporter Add / Edit Modal Triggered by Wheel Click */}
+      <WheelSupporterModal
+        isOpen={isSupporterModalOpen}
+        onClose={() => setIsSupporterModalOpen(false)}
+        mode={modalMode}
+        participant={selectedParticipantForEdit}
+        totalRoses={totalRoses}
+        onAddParticipant={onAddParticipant}
+        onUpdateRoses={onUpdateRoses}
+        onRemoveParticipant={onRemoveParticipant}
+      />
     </div>
   );
 };

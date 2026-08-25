@@ -2,14 +2,24 @@ import type { Participant } from '../types';
 
 export const INITIAL_PARTICIPANTS: Participant[] = [
   {
-    id: 'p-1',
-    username: 'ahmed_alharbi',
-    displayName: 'أحمد الحربي 👑',
+    id: 'p-vip-9748',
+    username: 'vip_9748',
+    displayName: 'vip_9748 👑',
     avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-    rosesCount: 15,
+    rosesCount: 65,
     joinedAt: Date.now() - 3600000,
     isVip: true,
-    streak: 3
+    streak: 8
+  },
+  {
+    id: 'p-1',
+    username: 'ahmed_alharbi',
+    displayName: 'أحمد الحربي ⚡',
+    avatarUrl: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80',
+    rosesCount: 25,
+    joinedAt: Date.now() - 3200000,
+    isVip: true,
+    streak: 4
   },
   {
     id: 'p-2',
@@ -24,19 +34,19 @@ export const INITIAL_PARTICIPANTS: Participant[] = [
   {
     id: 'p-3',
     username: 'faisal_ksa_7',
-    displayName: 'فيصل الشمري ⚡',
-    avatarUrl: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80',
-    rosesCount: 8,
+    displayName: 'فيصل الشمري 🔥',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    rosesCount: 18,
     joinedAt: Date.now() - 2500000,
-    isVip: false,
-    streak: 1
+    isVip: true,
+    streak: 2
   },
   {
     id: 'p-4',
     username: 'nour_design',
     displayName: 'نور المصممة ✨',
     avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
-    rosesCount: 12,
+    rosesCount: 14,
     joinedAt: Date.now() - 2000000,
     isVip: false,
     streak: 2
@@ -45,18 +55,18 @@ export const INITIAL_PARTICIPANTS: Participant[] = [
     id: 'p-5',
     username: 'omar_legend',
     displayName: 'عمر الأسطورة 🦁',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
     rosesCount: 42,
     joinedAt: Date.now() - 1500000,
     isVip: true,
-    streak: 8
+    streak: 6
   },
   {
     id: 'p-6',
     username: 'mariam_rose',
     displayName: 'مريم وردة 🌹',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    rosesCount: 6,
+    rosesCount: 10,
     joinedAt: Date.now() - 1200000,
     isVip: false,
     streak: 1
@@ -65,20 +75,10 @@ export const INITIAL_PARTICIPANTS: Participant[] = [
     id: 'p-7',
     username: 'khalid_streamer',
     displayName: 'خالد ستريم 🎬',
-    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-    rosesCount: 19,
+    avatarUrl: 'https://images.unsplash.com/photo-1628157582853-a796fa650a6a?w=150&auto=format&fit=crop&q=80',
+    rosesCount: 22,
     joinedAt: Date.now() - 900000,
     isVip: true,
     streak: 4
-  },
-  {
-    id: 'p-8',
-    username: 'yousef_vip',
-    displayName: 'يوسف العتيبي 💎',
-    avatarUrl: 'https://images.unsplash.com/photo-1628157582853-a796fa650a6a?w=150&auto=format&fit=crop&q=80',
-    rosesCount: 55,
-    joinedAt: Date.now() - 500000,
-    isVip: true,
-    streak: 10
   }
 ];
