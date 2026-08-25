@@ -68,7 +68,7 @@ export const WinnerModal: React.FC<WinnerModalProps> = ({
       };
       onSaveWinner(record);
     }
-  }, [isOpen, winner, prize]);
+  }, [isOpen, winner, prize, onSaveWinner]);
 
   if (!isOpen || !winner) return null;
 

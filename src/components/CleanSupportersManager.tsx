@@ -124,6 +124,8 @@ export const CleanSupportersManager: React.FC<CleanSupportersManagerProps> = ({
       {isBulkOpen && (
         <form onSubmit={handleBulkSubmit} className="bg-[#FFFDF0] p-2 border-2 border-black neo-box-sm space-y-1.5 shrink-0 animate-in fade-in duration-150">
           <textarea
+            name="bulkText"
+            id="bulkText"
             value={bulkText}
             onChange={(e) => setBulkText(e.target.value)}
             placeholder="اكتب أو الصق الأسماء (اسم في كل سطر)..."
@@ -154,6 +156,8 @@ export const CleanSupportersManager: React.FC<CleanSupportersManagerProps> = ({
           <div className="relative flex-1">
             <input
               type="text"
+              name="username"
+              id="usernameInput"
               value={usernameInput}
               onChange={(e) => setUsernameInput(e.target.value)}
               placeholder="اسم الداعم أو حسابه..."
@@ -165,6 +169,8 @@ export const CleanSupportersManager: React.FC<CleanSupportersManagerProps> = ({
             <RoseIcon className="w-3.5 h-3.5 text-[#FF5376]" />
             <input
               type="number"
+              name="rosesCount"
+              id="rosesInput"
               min="1"
               max="999"
               value={rosesInput}

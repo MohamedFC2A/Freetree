@@ -39,7 +39,7 @@ function connectToTikTok(username) {
   if (tiktokConnection) {
     try {
       tiktokConnection.disconnect();
-    } catch (e) {}
+    } catch {}
     tiktokConnection = null;
   }
 
@@ -132,7 +132,7 @@ function connectToTikTok(username) {
       });
     });
 
-    tiktokConnection.on('error', err => {
+    tiktokConnection.on('error', () => {
       // quiet log
     });
 

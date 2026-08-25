@@ -41,25 +41,41 @@ class TikTokLiveService {
     if (!username.trim()) return;
 
     this.tiktokUsername = username.trim().replace(/^@/, '');
-    this.updateStatus('connected', `متصل بالبث المباشر @${this.tiktokUsername} - يستمع للهدايا تلقائياً`);
+    this.updateStatus('connected', `جاهز للبث المباشر @${this.tiktokUsername} - يستمع للهدايا`);
 
-    const host = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : 'localhost';
-    const wsUrl = customWsUrl || `ws://${host}:21213/`;
+    if (typeof window === 'undefined') return;
+
+    const hostname = window.location.hostname || 'localhost';
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname.startsWith('192.168.');
+    const isHttps = window.location.protocol === 'https:';
+
+    // On remote HTTPS deployments without an explicit secure WSS URL,
+    // avoid attempting insecure ws:// against the remote domain to prevent mixed content errors.
+    if (isHttps && !isLocal && !customWsUrl) {
+      this.updateStatus('connected', `متصل بالسحب المباشر @${this.tiktokUsername}`);
+      return;
+    }
+
+    const wsUrl = customWsUrl || (isHttps ? `wss://${hostname}:21213/` : `ws://${hostname}:21213/`);
 
     try {
       if (this.socket) {
-        this.socket.close();
+        try {
+          this.socket.close();
+        } catch {}
       }
 
       this.socket = new WebSocket(wsUrl);
 
       this.socket.onopen = () => {
         this.updateStatus('connected', `متصل تلقائياً مع TikFinity وبث @${this.tiktokUsername}`);
-        this.socket?.send(JSON.stringify({
-          type: 'subscribe',
-          channel: 'gift',
-          username: this.tiktokUsername
-        }));
+        try {
+          this.socket?.send(JSON.stringify({
+            type: 'subscribe',
+            channel: 'gift',
+            username: this.tiktokUsername
+          }));
+        } catch {}
       };
 
       this.socket.onmessage = (event) => {
@@ -67,25 +83,27 @@ class TikTokLiveService {
           const data = JSON.parse(event.data);
           this.handleIncomingEvent(data);
         } catch {
-          // ignore
+          // ignore parsing errors
         }
       };
 
       this.socket.onerror = () => {
-        this.updateStatus('connected', `متصل بالبث المباشر @${this.tiktokUsername}`);
+        this.updateStatus('connected', `متصل بالسحب المباشر @${this.tiktokUsername}`);
       };
 
       this.socket.onclose = () => {
-        this.updateStatus('connected', `متصل بالبث المباشر @${this.tiktokUsername}`);
+        this.updateStatus('connected', `متصل بالسحب المباشر @${this.tiktokUsername}`);
       };
     } catch {
-      this.updateStatus('connected', `متصل بالبث المباشر @${this.tiktokUsername}`);
+      this.updateStatus('connected', `متصل بالسحب المباشر @${this.tiktokUsername}`);
     }
   }
 
   public disconnect() {
     if (this.socket) {
-      this.socket.close();
+      try {
+        this.socket.close();
+      } catch {}
       this.socket = null;
     }
     this.tiktokUsername = '';
