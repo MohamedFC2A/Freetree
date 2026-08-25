@@ -286,31 +286,29 @@ export function App() {
   const getContainerClasses = () => {
     switch (screenRatio) {
       case '9:16':
-        return 'max-w-[440px] h-screen sm:border-4 border-black sm:shadow-[0_0_20px_rgba(0,0,0,0.5)]';
+        return 'max-w-[440px] sm:border-4 border-black sm:shadow-[0_0_20px_rgba(0,0,0,0.5)]';
       case '1:1':
-        return 'max-w-[760px] h-screen sm:border-4 border-black sm:shadow-[0_0_20px_rgba(0,0,0,0.5)]';
+        return 'max-w-[760px] sm:border-4 border-black sm:shadow-[0_0_20px_rgba(0,0,0,0.5)]';
       case '16:9':
-        return 'max-w-[1100px] h-screen sm:border-4 border-black sm:shadow-[0_0_20px_rgba(0,0,0,0.5)]';
+        return 'max-w-[1100px] sm:border-4 border-black sm:shadow-[0_0_20px_rgba(0,0,0,0.5)]';
       case '4:3':
-        return 'max-w-[900px] h-screen sm:border-4 border-black sm:shadow-[0_0_20px_rgba(0,0,0,0.5)]';
+        return 'max-w-[900px] sm:border-4 border-black sm:shadow-[0_0_20px_rgba(0,0,0,0.5)]';
       case 'dock':
-        return 'max-w-[360px] h-screen sm:border-4 border-black sm:shadow-[0_0_20px_rgba(0,0,0,0.5)]';
+        return 'max-w-[360px] sm:border-4 border-black sm:shadow-[0_0_20px_rgba(0,0,0,0.5)]';
       case 'full':
       default:
-        return 'max-w-7xl w-full h-screen';
+        return 'max-w-7xl w-full';
     }
   };
 
-  const isStackedLayout = screenRatio === '9:16' || screenRatio === 'dock';
-
   return (
-    <div className="h-screen max-h-screen w-screen flex flex-col items-center justify-start bg-[#18181B] text-black overflow-hidden font-sans select-none">
+    <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-[#18181B] text-black font-sans select-none overflow-x-hidden">
       {/* Floating Roses Layer */}
       <FloatingRosesLayer roses={floatingRoses} />
 
       {/* Frame Container */}
-      <div className={`w-full bg-[#FFFDF0] flex flex-col overflow-hidden transition-all duration-200 ${getContainerClasses()}`}>
-        {/* Fixed Header with Screen Ratio Modal Trigger */}
+      <div className={`w-full min-h-screen lg:h-screen lg:max-h-screen bg-[#FFFDF0] flex flex-col transition-all duration-200 ${getContainerClasses()}`}>
+        {/* Fixed Header */}
         <Header
           isMuted={isMuted}
           onToggleMute={handleToggleMute}
@@ -323,16 +321,12 @@ export function App() {
           winnersCount={winnersHistory.length}
         />
 
-        {/* Main Content Area */}
-        <main className={`flex-1 min-h-0 w-full p-2 sm:p-3 overflow-hidden ${
-          isStackedLayout
-            ? 'flex flex-col gap-2 overflow-y-auto'
-            : 'grid grid-cols-12 gap-2.5'
-        }`}>
-          {isStackedLayout ? (
-            /* Stacked Layout for 9:16 & Dock */
-            <>
-              <TikTokLiveConnector onAutoAddSupporter={handleAutoAddSupporter} />
+        {/* Responsive Main Layout: Stacked on Mobile & Tablet, 2-Column Zero-Scroll on Desktop */}
+        <main className="flex-1 w-full p-2.5 sm:p-3 overflow-y-auto lg:overflow-hidden lg:grid lg:grid-cols-12 lg:gap-2.5 flex flex-col gap-3 pb-16 lg:pb-3">
+          {/* Section A: Prize & Wheel Spotlight (Prominently displayed first on Mobile!) */}
+          <div className="lg:col-span-7 flex flex-col gap-2.5 lg:h-full lg:overflow-hidden order-1 lg:order-2">
+            {/* Active Selected Prize Showcase */}
+            <div className="shrink-0">
               <SmartPrizeDropdown
                 subscriptions={subscriptions}
                 selectedPrize={selectedPrize}
@@ -342,6 +336,10 @@ export function App() {
                 }}
                 onOpenCustomModal={() => setIsCustomPrizeModalOpen(true)}
               />
+            </div>
+
+            {/* TikFinity Wheel Spotlight (Large, round, gorgeous on mobile and desktop) */}
+            <div className="flex-1 flex flex-col items-center justify-center">
               <TikFinityWheel
                 participants={participants}
                 activePrize={selectedPrize}
@@ -351,6 +349,18 @@ export function App() {
                 isMuted={isMuted}
                 onToggleMute={handleToggleMute}
               />
+            </div>
+          </div>
+
+          {/* Section B: TikTok Live Connector + Supporters Management Feed */}
+          <div className="lg:col-span-5 flex flex-col gap-2.5 lg:h-full lg:overflow-hidden order-2 lg:order-1">
+            {/* Real-time TikTok Live Automatic Connection Bar */}
+            <div className="shrink-0">
+              <TikTokLiveConnector onAutoAddSupporter={handleAutoAddSupporter} />
+            </div>
+
+            {/* Supporters Manager */}
+            <div className="flex-1 min-h-[320px] lg:min-h-0">
               <CleanSupportersManager
                 participants={participants}
                 onAddParticipant={handleAddParticipant}
@@ -360,57 +370,8 @@ export function App() {
                 onClearAll={handleClear}
                 onResetDefaults={handleResetToDefaults}
               />
-            </>
-          ) : (
-            /* Side-by-Side Zero-Scroll Layout for Full, 16:9, 4:3, 1:1 */
-            <>
-              {/* Left Column: TikTok Live Connector + Supporters Manager */}
-              <div className="col-span-12 lg:col-span-5 flex flex-col h-full gap-2 overflow-hidden">
-                <div className="shrink-0">
-                  <TikTokLiveConnector onAutoAddSupporter={handleAutoAddSupporter} />
-                </div>
-
-                <div className="flex-1 min-h-0">
-                  <CleanSupportersManager
-                    participants={participants}
-                    onAddParticipant={handleAddParticipant}
-                    onRemoveParticipant={handleRemoveParticipant}
-                    onUpdateRoses={handleUpdateRoses}
-                    onBulkAdd={handleBulkAdd}
-                    onClearAll={handleClear}
-                    onResetDefaults={handleResetToDefaults}
-                  />
-                </div>
-              </div>
-
-              {/* Right Column: Active Prize Showcase + TikFinity Wheel */}
-              <div className="col-span-12 lg:col-span-7 flex flex-col h-full gap-2 overflow-hidden">
-                <div className="shrink-0">
-                  <SmartPrizeDropdown
-                    subscriptions={subscriptions}
-                    selectedPrize={selectedPrize}
-                    onSelectPrize={(prize) => {
-                      setSelectedPrize(prize);
-                      soundEngine.playRoseDrop();
-                    }}
-                    onOpenCustomModal={() => setIsCustomPrizeModalOpen(true)}
-                  />
-                </div>
-
-                <div className="flex-1 min-h-0">
-                  <TikFinityWheel
-                    participants={participants}
-                    activePrize={selectedPrize}
-                    onSpinEnd={handleSpinEnd}
-                    onShuffle={handleShuffle}
-                    onClear={handleClear}
-                    isMuted={isMuted}
-                    onToggleMute={handleToggleMute}
-                  />
-                </div>
-              </div>
-            </>
-          )}
+            </div>
+          </div>
         </main>
       </div>
 
